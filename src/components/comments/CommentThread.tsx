@@ -27,7 +27,6 @@ export const CommentThread: React.FC<CommentThreadProps> = ({ issueId, currentUs
   const [showPreview, setShowPreview] = useState(false);
   const [mentionSuggestions, setMentionSuggestions] = useState<MentionSuggestion[]>([]);
   const [showMentions, setShowMentions] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState('');
 
   useEffect(() => {
     fetchComments();
@@ -50,7 +49,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({ issueId, currentUs
         content: newComment,
         issueId,
         authorId: currentUser.id,
-        parentCommentId: replyingTo
+        parentCommentId: replyingTo || undefined
       });
       
       setNewComment('');
@@ -89,7 +88,6 @@ export const CommentThread: React.FC<CommentThreadProps> = ({ issueId, currentUs
   const handleMentionInput = (text: string) => {
     const mentionMatch = text.match(/@(\w*)$/);
     if (mentionMatch) {
-      setMentionQuery(mentionMatch[1]);
       setShowMentions(true);
       setMentionSuggestions([
         { id: '1', name: 'John Doe', email: 'john@example.com' },
