@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { sprintsApi, issuesApi, Sprint, Issue } from '@/lib/api';
+import { sprintsApi, issuesApi, analyticsApi, Sprint, Issue } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Play, Square, Calendar } from 'lucide-react';
+import { Play, Square, Calendar, BarChart3 } from 'lucide-react';
+import { VelocityChart } from '@/components/charts/VelocityChart';
+import { BurndownChart } from '@/components/charts/BurndownChart';
 
 interface SprintBoardProps {
   projectId: string;
@@ -11,6 +13,10 @@ interface SprintBoardProps {
 export const SprintBoard: React.FC<SprintBoardProps> = ({ projectId }) => {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [backlogIssues, setBacklogIssues] = useState<Issue[]>([]);
+  const [velocityData, setVelocityData] = useState<any[]>([]);
+  const [burndownData, setBurndownData] = useState<any[]>([]);
+  const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +29,25 @@ export const SprintBoard: React.FC<SprintBoardProps> = ({ projectId }) => {
         
         setSprints(sprintsResponse.data);
         setBacklogIssues(issuesResponse.data.filter(issue => !issue.sprintId));
+        
+        const activeSprintData = sprintsResponse.data.find(s => s.status === 'Active');
+        setActiveSprint(activeSprintData || null);
+        
+        try {
+          const velocityResponse = await analyticsApi.getVelocityChart(projectId);
+          setVelocityData(velocityResponse.data);
+        } catch (error) {
+          console.error('Failed to fetch velocity data:', error);
+        }
+        
+        if (activeSprintData) {
+          try {
+            const burndownResponse = await analyticsApi.getBurndownChart(activeSprintData.id);
+            setBurndownData(burndownResponse.data);
+          } catch (error) {
+            console.error('Failed to fetch burndown data:', error);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch sprint data:', error);
       } finally {
@@ -71,8 +96,31 @@ export const SprintBoard: React.FC<SprintBoardProps> = ({ projectId }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Sprint Planning</h1>
-        <Button>Create Sprint</Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => setShowCharts(!showCharts)}>
+            <BarChart3 className="w-4 h-4 mr-2" />
+            {showCharts ? 'Hide Charts' : 'Show Charts'}
+          </Button>
+          <Button>Create Sprint</Button>
+        </div>
       </div>
+
+      {showCharts && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <Card>
+            <CardContent className="p-6">
+              <VelocityChart data={velocityData} />
+            </CardContent>
+          </Card>
+          {activeSprint && burndownData.length > 0 && (
+            <Card>
+              <CardContent className="p-6">
+                <BurndownChart data={burndownData} sprintName={activeSprint.name} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
