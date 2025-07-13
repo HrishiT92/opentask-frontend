@@ -126,6 +126,7 @@ export const projectsApi = {
 export const issuesApi = {
   getAll: (projectId?: string) => 
     api.get<Issue[]>('/issues', { params: { projectId } }),
+  getByProject: (projectId: string) => api.get<Issue[]>(`/projects/${projectId}/issues`),
   getById: (id: string) => api.get<Issue>(`/issues/${id}`),
   create: (issue: Omit<Issue, 'id' | 'createdAt' | 'updatedAt'>) =>
     api.post<Issue>('/issues', issue),
@@ -192,4 +193,12 @@ export const analyticsApi = {
     api.get(`/analytics/velocity/${projectId}`),
   getBurndownChart: (sprintId: string) =>
     api.get(`/analytics/burndown/${sprintId}`),
+};
+
+export const dependenciesApi = {
+  getByIssue: (issueId: string) => api.get(`/issues/${issueId}/dependencies`),
+  create: (blockingIssueId: string, blockedIssueId: string, type: string) => 
+    api.post(`/issues/${blockingIssueId}/dependencies`, { blockedIssueId, type }),
+  delete: (issueId: string, dependencyId: string) => 
+    api.delete(`/issues/${issueId}/dependencies/${dependencyId}`)
 };
